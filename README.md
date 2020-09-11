@@ -1,6 +1,6 @@
 # configer
 
-Configuration loader that support INI, XML, YAML, JSON, HCL, TOML, Shell Environment, Default Value, Customize
+Configuration loader that support INI, YAML, JSON, TOML, Shell Environment, Default Value, Customize
 
 ## Install
 
