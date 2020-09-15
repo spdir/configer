@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/BurntSushi/toml"
 	"github.com/tidwall/gjson"
 	"gopkg.in/ini.v1"
 	"gopkg.in/yaml.v2"
@@ -35,7 +36,7 @@ func initialConfigCallObject(configType string) (err error) {
 	case "toml":
 		configCallObject = &tomlConfig{}
 	default:
-		err = fmt.Errorf("not found %s cofnig type module\n", configType)
+		err = fmt.Errorf("not found %s config type module\n", configType)
 		return
 	}
 	return nil
@@ -109,10 +110,19 @@ func (conf *yamlConfig) getValue(key string) (value interface{}, err error) {
 
 // toml configure
 type tomlConfig struct {
+	configer gjson.Result
 }
 
 func (conf *tomlConfig) loadConfig(i interface{}, file string) error {
-
+	_, err := toml.DecodeFile(file, i)
+	if err != nil {
+		return err
+	}
+	data, err := ioutil.ReadFile(file)
+	if err != nil {
+		return err
+	}
+	conf.configer = gjson.ParseBytes(data)
 	return nil
 }
 

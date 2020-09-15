@@ -6,7 +6,7 @@ import (
 )
 
 type testConfig struct {
-	Service *testServiceInfo `ini:"web" json:"web" yaml:"web" conf:"web"`
+	Service *testServiceInfo `ini:"web" json:"web" yaml:"web" conf:"web" toml:"web"`
 	Redis   *testRedisInfo   `ini:"redis" yaml:"redis"`
 	Mysql   *testMysqlInfo   `ini:"mysql" yaml:"mysql"`
 }
@@ -77,5 +77,14 @@ func TestLoadYamlFile(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Logf("%#v\n", testYamlConfig.Service)
+	t.Logf("%#v\n", testYamlConfig.Mysql)
+}
+
+func TestLoadTomlFile(t *testing.T) {
+	testTomlConfig := &testConfig{}
+	err := LoadConfig(testTomlConfig, "./test_config_file/test_config.toml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("%#v\n", testTomlConfig.Mysql)
 }

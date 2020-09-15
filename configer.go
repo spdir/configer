@@ -2,6 +2,7 @@ package configer
 
 import "errors"
 
+// Please follow the format of each configuration file and use tag when struct field
 /* struct tag describe
 	config type tag: (ini, json, yaml, toml) 不同配置原始tag，用于struct字段和配置文件不同时读取
 	conf: 获取值时定义的tag，默认：以struct字段名首页字母小写

@@ -1,23 +1,23 @@
 web:
-  Port: 8081
-  EnablePprof: false
-  AppMode: "development"
-  LogLevel: "info"
-  LogSaveDay: 7
-  LogSplitTime: 24
-  LogOutType: "json"
-  LogOutPath: "file"
-  StartTime: 
+  port: 8081
+  enablePprof: false
+  appMode: "development"
+  logLevel: "info"
+  logSaveDay: 7
+  logSplitTime: 24
+  logOutType: "json"
+  logOutPath: "file"
+  startTime: 
 
 redis:
-  Host: "127.0.0.1"
-  Port:
-  Password:
+  host: "127.0.0.1"
+  port:
+  password:
 
 mysql:
-  Host: "127.0.0.1"
-  Port: 3306
-  User: "root"
-  Password: "xxxxx.yaml"
-  DB: "dbname"
-  EnableDebug: false
+  host: "127.0.0.1"
+  port: 3306
+  user: "root"
+  password: "xxxxx.yaml"
+  db: "dbname"
+  enableDebug: false
