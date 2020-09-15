@@ -88,3 +88,26 @@ func TestLoadTomlFile(t *testing.T) {
 	}
 	t.Logf("%#v\n", testTomlConfig.Mysql)
 }
+
+func TestGetConfig(t *testing.T) {
+	testIniConfig := &testConfig{}
+	err := LoadConfig(testIniConfig, "./test_config_file/test_config.ini")
+	if err != nil {
+		t.Fatal(err)
+	}
+	// t.Log(Get("web::port"))
+	t.Log(GetInt("web::startTime"))
+}
+
+func TestUpdateConfig(t *testing.T) {
+	testIniConfig := &testConfig{}
+	err := LoadConfig(testIniConfig, "./test_config_file/test_config.ini")
+	if err != nil {
+		t.Fatal(err)
+	}
+	// err = Set("web::port", 80)
+	// if err != nil {
+	// 	t.Fatal(err)
+	// }
+	// t.Log("success")
+}

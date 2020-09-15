@@ -2,14 +2,13 @@ package configer
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"reflect"
 	"regexp"
-	"strconv"
 	"strings"
-	"time"
 
 	"github.com/BurntSushi/toml"
 	"github.com/tidwall/gjson"
@@ -25,7 +24,6 @@ type configInterface interface {
 
 /* configer different configer type module */
 func initialConfigCallObject(configType string) (err error) {
-	fmt.Println("type", configType)
 	switch configType {
 	case "ini":
 		configCallObject = &iniConfig{}
@@ -197,7 +195,7 @@ func updateConfigValue(fieldType *reflect.StructField, fieldVal *reflect.Value) 
 	envValue := os.Getenv(envName)
 	if envValue != "-" {
 		if envValue != "" {
-			setConfigValue(fieldType, fieldVal, envValue)
+			_ = setConfigValue(fieldType, fieldVal, envValue)
 			return
 		}
 	}
@@ -218,10 +216,10 @@ func updateConfigValue(fieldType *reflect.StructField, fieldVal *reflect.Value) 
 			callValue := callFunc.Call(args)
 			if len(callValue) > 0 {
 				callResultValue := callValue[0].String()
-				setConfigValue(fieldType, fieldVal, callResultValue)
+				_ = setConfigValue(fieldType, fieldVal, callResultValue)
 			}
 		} else {
-			setConfigValue(fieldType, fieldVal, defaultValue)
+			_ = setConfigValue(fieldType, fieldVal, defaultValue)
 		}
 	}
 
@@ -239,75 +237,232 @@ func updateConfigValue(fieldType *reflect.StructField, fieldVal *reflect.Value) 
 	}
 }
 
-func setConfigValue(fieldType *reflect.StructField, fieldVal *reflect.Value, value interface{}) {
-	confValue := value.(string)
-	switch fieldType.Type.Kind() {
-	case reflect.String:
-		fieldVal.SetString(confValue)
-	case reflect.Int:
-		v, _ := strconv.Atoi(confValue)
-		fieldVal.SetInt(int64(v))
-	case reflect.Bool:
-		v, _ := strconv.ParseBool(confValue)
-		fieldVal.SetBool(v)
+/* configer getter */
+func readConfigVal(fileConfig *ini.File, keys []string) interface{} {
+	sectionStrings := fileConfig.SectionStrings()
+	isHas := IsInSlice(keys[0], sectionStrings)
+	if !isHas {
+		return nil
 	}
+	section := fileConfig.Section(keys[0])
+	keyStrings := section.KeyStrings()
+	isHas = IsInSlice(keys[1], keyStrings)
+	if !isHas {
+		return nil
+	}
+	value := section.Key(keys[1])
+	return value
 }
 
-/* configer getter */
+func getNextFloorConfig(config interface{}, key string) interface{} {
+	tp := reflect.TypeOf(config)
+	val := reflect.ValueOf(config)
+	if tp.Kind() == reflect.Ptr {
+		tp = tp.Elem()
+		val = val.Elem()
+	}
+	for i := 0; i < tp.NumField(); i++ {
+		fieldTp := tp.Field(i)
+		fieldVal := val.Field(i)
+		fieldConfName := fieldTp.Tag.Get("conf")
+		if fieldConfName == "" {
+			fieldConfName = LowerCase(fieldTp.Name)
+		}
+		if key == fieldConfName {
+			funcValue := fieldTp.Tag.Get("func")
+			if funcValue != "" {
+				callBack := reflect.ValueOf(&DefGetCall{})
+				callFunc := callBack.MethodByName(funcValue)
+				funcParamsLen := callFunc.Type().NumIn()
+				var args []reflect.Value
+				if funcParamsLen == 1 {
+					args = append(args, reflect.ValueOf(fieldVal.Interface()))
+				}
+				callValue := callFunc.Call(args)
+				if len(callValue) > 0 {
+					return callValue[0].Interface()
+				}
+			}
+			return fieldVal.Interface()
+		}
+	}
+	return nil
+}
+
 // get configure field value
 // example: Get("web::port")
 // example: Get("config")
 func Get(key string) (value interface{}) {
-	return nil
+	if key == "" {
+		return nil
+	}
+	keys := strings.Split(key, "::")
+	if len(keys) == 0 {
+		return nil
+	}
+	var config interface{}
+	config = configerData
+	for _, currentKey := range keys {
+		fmt.Println(config)
+		config = getNextFloorConfig(config, currentKey)
+		if config == nil {
+			break
+		}
+	}
+	if config == nil {
+		config, err := configCallObject.getValue(key)
+		if err != nil {
+			return nil
+		} else {
+			return config
+		}
+	}
+	return config
 }
 
 func GetString(key string) (value string) {
+	result := Get(key)
+	if v, ok := result.(string); ok {
+		return v
+	}
 	return
 }
 
 func GetInt(key string) (value int) {
+	result := Get(key)
+	if v, ok := result.(int); ok {
+		return v
+	}
 	return
 }
 
 func GetFloat64(key string) (value float64) {
+	result := Get(key)
+	if v, ok := result.(float64); ok {
+		return v
+	}
 	return
 }
 
 func GetBool(key string) (value bool) {
+	result := Get(key)
+	if v, ok := result.(bool); ok {
+		return v
+	}
 	return
 }
 
 func GetIntSlice(key string) (value []int) {
+	result := Get(key)
+	if v, ok := result.([]int); ok {
+		return v
+	}
 	return
 }
 
 func GetStringMap(key string) (value map[string]interface{}) {
+	result := Get(key)
+	if v, ok := result.(map[string]interface{}); ok {
+		return v
+	}
 	return
 }
 
 func GetStringMapString(key string) (value map[string]string) {
+	result := Get(key)
+	if v, ok := result.(map[string]string); ok {
+		return v
+	}
 	return
 }
 
 func GetStringSlice(key string) (value []string) {
+	result := Get(key)
+	if v, ok := result.([]string); ok {
+		return v
+	}
 	return
 }
 
-func GetTime(key string) (value time.Time) {
-	return
-}
+// func GetTime(key string) (value time.Time) {
+// 	return
+// }
 
-func GetDuration(key string) (value time.Duration) {
-	return
-}
+// func GetDuration(key string) (value time.Duration) {
+// return
+// }
 
-func IsSet(key string) (status bool) {
-	return
-}
+// func IsSet(key string) (status bool) {
+// 	return
+// }
 
 func AllSettings() (result map[string]interface{}) {
+
 	return
 }
 
 /* configer update value */
 // ...
+//
+func Set(key string, val interface{}) (err error) {
+	if key == "" {
+		return errors.New("update configer key params not null")
+	}
+	var lastKey string
+	var rangeKeys []string
+	keys := strings.Split(key, "::")
+	if len(keys) == 1 {
+		lastKey = key
+	} else {
+		lastKey = keys[len(keys)-1]
+		rangeKeys = keys[0 : len(keys)-2]
+	}
+	var config interface{}
+	config = configerData
+	if rangeKeys != nil {
+		for _, currentKey := range rangeKeys {
+			lastConfig := getNextFloorConfig(config, currentKey)
+			if config == nil {
+				break
+			}
+			if checkObjIsStruct(lastConfig) {
+				config = lastConfig
+			} else {
+				return fmt.Errorf("not found %s key\n", currentKey)
+			}
+		}
+	}
+	lastObj := getNextFloorConfig(config, lastKey)
+	if lastObj == nil && checkObjIsStruct(lastObj) {
+		return fmt.Errorf("not found %s key\n", lastKey)
+	}
+	tpField, vlField := getStructField(config, lastKey)
+	if tpField != nil && vlField != nil {
+		err = setConfigValue(tpField, vlField, val)
+		if err != nil {
+			return
+		}
+	}
+	return
+}
+
+func getStructField(config interface{}, key string) (fieldType *reflect.StructField, fieldVal *reflect.Value) {
+	tp := reflect.TypeOf(config)
+	val := reflect.ValueOf(config)
+	if tp.Kind() == reflect.Ptr {
+		tp = tp.Elem()
+		val = val.Elem()
+	}
+	for i := 0; i < tp.NumField(); i++ {
+		fieldTp := tp.Field(i)
+		fieldVal := val.Field(i)
+		fieldConfName := fieldTp.Tag.Get("conf")
+		if fieldConfName == "" {
+			fieldConfName = LowerCase(fieldTp.Name)
+		}
+		if key == fieldConfName {
+			return &fieldTp, &fieldVal
+		}
+	}
+	return nil, nil
+}
