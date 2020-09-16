@@ -123,3 +123,12 @@ func TestIsSet(t *testing.T) {
 	t.Log(IsSet("web::port"))
 	t.Log(IsSet("web::host"))
 }
+
+func TestAllSetting(t *testing.T) {
+	testIniConfig := &testConfig{}
+	err := LoadConfig(testIniConfig, "./test_config_file/test_config.ini")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(AllSettings())
+}

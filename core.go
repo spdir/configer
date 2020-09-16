@@ -400,7 +400,15 @@ func IsSet(key string) (status bool) {
 }
 
 func AllSettings() (result map[string]interface{}) {
-
+	data, err := json.Marshal(configerData)
+	if err != nil {
+		return
+	}
+	result = make(map[string]interface{})
+	err = json.Unmarshal(data, &result)
+	if err != nil {
+		return
+	}
 	return
 }
 
