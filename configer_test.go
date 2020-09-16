@@ -105,9 +105,21 @@ func TestUpdateConfig(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	// err = Set("web::port", 80)
-	// if err != nil {
-	// 	t.Fatal(err)
-	// }
-	// t.Log("success")
+	t.Log(Get("web::port"))
+	err = Set("web::port", 80)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log("success")
+	t.Log(Get("web::port"))
+}
+
+func TestIsSet(t *testing.T) {
+	testIniConfig := &testConfig{}
+	err := LoadConfig(testIniConfig, "./test_config_file/test_config.ini")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(IsSet("web::port"))
+	t.Log(IsSet("web::host"))
 }

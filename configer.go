@@ -64,7 +64,7 @@ func LoadConfig(i interface{}, file string) (err error) {
 
 func new(i interface{}, file string) (err error) {
 	fileType := getFileType(file)
-	if !IsInSlice(fileType, supportConfig) {
+	if !isInSlice(fileType, supportConfig) {
 		err = errors.New("not support config type")
 		return
 	}

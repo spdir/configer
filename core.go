@@ -240,13 +240,13 @@ func updateConfigValue(fieldType *reflect.StructField, fieldVal *reflect.Value) 
 /* configer getter */
 func readConfigVal(fileConfig *ini.File, keys []string) interface{} {
 	sectionStrings := fileConfig.SectionStrings()
-	isHas := IsInSlice(keys[0], sectionStrings)
+	isHas := isInSlice(keys[0], sectionStrings)
 	if !isHas {
 		return nil
 	}
 	section := fileConfig.Section(keys[0])
 	keyStrings := section.KeyStrings()
-	isHas = IsInSlice(keys[1], keyStrings)
+	isHas = isInSlice(keys[1], keyStrings)
 	if !isHas {
 		return nil
 	}
@@ -266,7 +266,7 @@ func getNextFloorConfig(config interface{}, key string) interface{} {
 		fieldVal := val.Field(i)
 		fieldConfName := fieldTp.Tag.Get("conf")
 		if fieldConfName == "" {
-			fieldConfName = LowerCase(fieldTp.Name)
+			fieldConfName = lowerCase(fieldTp.Name)
 		}
 		if key == fieldConfName {
 			funcValue := fieldTp.Tag.Get("func")
@@ -303,7 +303,6 @@ func Get(key string) (value interface{}) {
 	var config interface{}
 	config = configerData
 	for _, currentKey := range keys {
-		fmt.Println(config)
 		config = getNextFloorConfig(config, currentKey)
 		if config == nil {
 			break
@@ -392,9 +391,13 @@ func GetStringSlice(key string) (value []string) {
 // return
 // }
 
-// func IsSet(key string) (status bool) {
-// 	return
-// }
+func IsSet(key string) (status bool) {
+	val := Get(key)
+	if val != nil {
+		return true
+	}
+	return false
+}
 
 func AllSettings() (result map[string]interface{}) {
 
@@ -402,11 +405,11 @@ func AllSettings() (result map[string]interface{}) {
 }
 
 /* configer update value */
-// ...
-//
+// example: Set("web::port", 80)
+// example: Set("title", "Configer Title")
 func Set(key string, val interface{}) (err error) {
 	if key == "" {
-		return errors.New("update configer key params not null")
+		return errors.New("update configer key params is null")
 	}
 	var lastKey string
 	var rangeKeys []string
@@ -415,11 +418,11 @@ func Set(key string, val interface{}) (err error) {
 		lastKey = key
 	} else {
 		lastKey = keys[len(keys)-1]
-		rangeKeys = keys[0 : len(keys)-2]
+		rangeKeys = keys[0 : len(keys)-1]
 	}
 	var config interface{}
 	config = configerData
-	if rangeKeys != nil {
+	if len(rangeKeys) > 0 {
 		for _, currentKey := range rangeKeys {
 			lastConfig := getNextFloorConfig(config, currentKey)
 			if config == nil {
@@ -433,11 +436,11 @@ func Set(key string, val interface{}) (err error) {
 		}
 	}
 	lastObj := getNextFloorConfig(config, lastKey)
-	if lastObj == nil && checkObjIsStruct(lastObj) {
+	if lastObj == nil || checkObjIsStruct(lastObj) {
 		return fmt.Errorf("not found %s key\n", lastKey)
 	}
 	tpField, vlField := getStructField(config, lastKey)
-	if tpField != nil && vlField != nil {
+	if tpField != nil || vlField != nil {
 		err = setConfigValue(tpField, vlField, val)
 		if err != nil {
 			return
@@ -458,7 +461,7 @@ func getStructField(config interface{}, key string) (fieldType *reflect.StructFi
 		fieldVal := val.Field(i)
 		fieldConfName := fieldTp.Tag.Get("conf")
 		if fieldConfName == "" {
-			fieldConfName = LowerCase(fieldTp.Name)
+			fieldConfName = lowerCase(fieldTp.Name)
 		}
 		if key == fieldConfName {
 			return &fieldTp, &fieldVal
